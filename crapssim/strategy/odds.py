@@ -60,7 +60,7 @@ class ComeOddsAmount(OddsAmount):
         bet_amount: typing.SupportsFloat,
         numbers: tuple[int] = (4, 5, 6, 8, 9, 10),
     ):
-        super().__init__(DontPass, {x: bet_amount for x in numbers})
+        super().__init__(Come, {x: bet_amount for x in numbers})
 
 
 class DontComeOddsAmount(OddsAmount):
