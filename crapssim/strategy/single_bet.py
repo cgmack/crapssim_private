@@ -18,6 +18,7 @@ from crapssim.bet import (
     Hop,
     PassLine,
     Place,
+    Lay,
     Small,
     Tall,
     Three,
@@ -186,6 +187,14 @@ class BetPlace(Strategy):
             f" skip_point={self.skip_point}, skip_come={self.skip_come})"
         )
 
+class BetLay(_BaseSingleBet):
+    def __init__(
+        self,
+        number: int,
+        total_placed_amount: typing.SupportsFloat,
+        mode=StrategyMode.ADD_IF_POINT_ON,
+    ):
+        super().__init__(Lay(10, total_placed_amount), mode=mode)
 
 class BetPassLine(_BaseSingleBet):
     def __init__(

@@ -44,6 +44,7 @@ class TableSettings(TypedDict):
     hop_payouts: dict[str, int]  # {"easy": 15, "hard": 30}
     max_odds: dict[int, int]  # {4: 3, 5: 4, 6: 5, 8: 5, 9: 4, 10: 3}
     max_dont_odds: dict[int, int]  # {4: 6, 5: 6, 6: 6, 8: 6, 9: 6, 10: 6}
+    lay_vig_rate: float # 0.05
 
 
 class Table(Protocol):
@@ -618,6 +619,49 @@ class Place(_SimpleBet):
 
     def __repr__(self) -> str:
         return f"Place({self.winning_numbers[0]}, amount={self.amount})"
+
+
+class Lay(_SimpleBet):
+# Placement: Can be made anytime 
+# Removal:   Any time before the next roll
+# Wins:      When 7 is rolled before chosen number
+# Loses:     When chosen number is rolled before 7
+# Vig:       5% paid upfront 
+# Payouts (true odds):
+#   4/10: 1:2
+#   5/9: 2:3
+#   6/8: 5:6
+
+# QUESTIONS / TODO: 
+# When to deduct the commission?
+# Should I force the 4/10 best to be divisible by 2? 6/8 by 6? 5/9 by 3? Here or? 
+
+    payout_ratios = {4: 1 / 2, 5: 2 / 3, 6: 5 / 6, 8: 5 / 6, 9: 2 / 3, 10: 1 / 2}
+    winning_numbers: list[int] = [7]
+    vig_rate: float = 0.05 #TODO: get this from table.settings["lay_vig_rate"]
+
+    def __init__(self, number: int, total_placed_amount: typing.SupportsFloat):
+        self.number = number
+        self.losing_numbers = [number]
+        self.payout_ratio = self.payout_ratios[number]
+        self.bet_amount, self.vig_paid = self.calculate_bet_and_commission(total_placed_amount, self.vig_rate)
+        super().__init__(self.bet_amount)
+
+    def calculate_bet_and_commission(self, total_placed_amount, vig_rate=0.05):
+        # The bet_amount is the total_placed_amount divided by (commission rate + 1)
+        bet_amount = int(total_placed_amount / (1 + vig_rate))
+        
+        # The vig_paid is the bet amount times commission rate
+        vig_paid = bet_amount * vig_rate
+        
+        return bet_amount, vig_paid
+
+    @property
+    def _placed_key(self) -> typing.Hashable:
+        return type(self), self.number
+
+    def __repr__(self) -> str:
+        return f"Lay({self.number}, amount={self.amount})"
 
 
 # _WinningLosingNumbersBets with variable payouts -----------------------------------------------------------------

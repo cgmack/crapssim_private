@@ -115,6 +115,7 @@ class TableSettings(typing.TypedDict):
     hop_payouts: dict[str, int]  # {"easy": 15, "hard": 30}
     max_odds: dict[int, int]  # {4: 3, 5: 4, 6: 5, 8: 5, 9: 4, 10: 3}
     max_dont_odds: dict[int, int]  # {4: 6, 5: 6, 6: 6, 8: 6, 9: 6, 10: 6}
+    lay_vig_rate: float # 0.05
 
 
 class Table:
@@ -157,6 +158,7 @@ class Table:
             "hop_payouts": {"easy": 15, "hard": 30},
             "max_odds": {4: 3, 5: 4, 6: 5, 8: 5, 9: 4, 10: 3},
             "max_dont_odds": {4: 6, 5: 6, 6: 6, 8: 6, 9: 6, 10: 6},
+            "lay_vig_rate": 0.05,
         }
         self.pass_rolls: int = 0
         self.last_roll: int | None = None

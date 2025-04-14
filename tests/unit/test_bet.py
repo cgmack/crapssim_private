@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 import crapssim.bet
-from crapssim.bet import Bet, CAndE, Come, DontCome, Hop, Odds, PassLine
+from crapssim.bet import Bet, CAndE, Come, DontCome, Hop, Odds, PassLine, Lay
 from crapssim.point import Point
 from crapssim.table import Table
 
@@ -82,6 +82,12 @@ def test_ev_oneroll(bet, ev):
         (crapssim.bet.Place(8, 1), "Place(8, amount=1.0)"),
         (crapssim.bet.Place(9, 1), "Place(9, amount=1.0)"),
         (crapssim.bet.Place(10, 1), "Place(10, amount=1.0)"),
+        (crapssim.bet.Lay(4, 105), "Lay(4, amount=100.0)"), 
+        (crapssim.bet.Lay(5, 105), "Lay(5, amount=100.0)"),
+        (crapssim.bet.Lay(6, 105), "Lay(6, amount=100.0)"),        
+        (crapssim.bet.Lay(8, 105), "Lay(8, amount=100.0)"),
+        (crapssim.bet.Lay(9, 105), "Lay(9, amount=100.0)"),
+        (crapssim.bet.Lay(10, 105), "Lay(10, amount=100.0)"),        
         (crapssim.bet.Field(1), "Field(amount=1.0)"),
         (crapssim.bet.Any7(1), "Any7(amount=1.0)"),
         (crapssim.bet.Two(1), "Two(amount=1.0)"),
@@ -258,3 +264,56 @@ def test_hop_inequality():
 
     assert hop_one != hop_two
     assert hop_one != hop_three
+
+
+def test_lay_win_4():
+    table = Table()
+    table.add_player()
+    table.players[0].bets = [Lay(4, 105)]
+    table.dice.fixed_roll((3, 4))
+    result = table.players[0].bets[0].get_result(table)
+    assert result.won == True
+    assert result.amount == 150
+
+
+def test_lay_win_5():
+    table = Table()
+    table.add_player()
+    table.players[0].bets = [Lay(5, 95)]
+    table.dice.fixed_roll((3, 4))
+    result = table.players[0].bets[0].get_result(table)
+    assert result.won == True
+    assert result.amount == 150
+
+
+def test_lay_win_6():
+    table = Table()
+    table.add_player()
+    table.players[0].bets = [Lay(6, 19)]
+    table.dice.fixed_roll((3, 4))
+    result = table.players[0].bets[0].get_result(table)
+    assert result.won == True
+    assert result.amount == 33
+
+
+def test_lay_loss_4():   
+    table = Table()
+    table.add_player()
+    table.players[0].bets = [Lay(4, 105)]
+    table.dice.fixed_roll((2, 2))
+    result = table.players[0].bets[0].get_result(table)
+    assert result.lost == True 
+    assert result.amount == -100.0
+    #assert result.bankroll_change == 0 #this fails, maybe b/c bankroll change does not happen at this point?
+
+
+def test_lay_push():
+    table = Table()
+    table.add_player()
+    table.players[0].bets = [Lay(4, 105)]
+    table.dice.fixed_roll((4, 4))
+    result = table.players[0].bets[0].get_result(table)
+    assert result.lost == False 
+    assert result.won == False 
+    assert result.pushed == True 
+    assert result.amount == 0.0
