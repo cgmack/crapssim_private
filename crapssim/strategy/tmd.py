@@ -45,10 +45,10 @@ class TMD(Strategy):
         self.base_amount = float(base_amount)
         self.dc_multiplier = int(dc_multiplier)
         self.max_loss_progression = int(max_loss_progression)
-        self.odds_multiplier = odds_multiplier = None # e.g. 3 --OR-- {4: 3, 5: 4, 6: 5, 8: 5, 9: 4, 10: 3} --OR-- None 
+        self.odds_multiplier = odds_multiplier  # e.g. 3 --OR-- {4: 3, 5: 4, 6: 5, 8: 5, 9: 4, 10: 3} --OR-- None 
         self.dc_loss_streak: int = 0
-        self.verbose= verbose # prints single row sumaries of bets and results
-        self.debug = False # prints detailed debug output 
+        self.verbose = verbose  # prints single row sumaries of bets and results
+        self.debug = False  # prints detailed debug output 
 
     # def build_bets_and_results_string(player):
         
@@ -169,13 +169,26 @@ class TMD(Strategy):
 
         # Maintain a count of dc_losses in a row. Reset to zero on a DC win.
         dc_bets = player.get_bets_by_type((DontCome))
-        if len(dc_bets) == 1:
-            # We should only ever have one DC bet on the table, so we only look at dc_bets[0]
-            if dc_bets[0].get_result(player.table).lost: 
-                self.dc_loss_streak += 1
-            elif dc_bets[0].get_result(player.table).won:
-                self.dc_loss_streak = 0
-        elif len(dc_bets) > 1:
+        
+        # Check for resolved bets in the last roll result
+        last_results = player.get_last_results()
+        
+        for result in last_results:
+            # Check for Don't Come bets that were resolved (won or lost)
+            if result.bet_type == "DontCome":
+                if result.won:
+                    self.dc_loss_streak = 0
+                    if self.debug:
+                        print(f"Don't Come bet won, resetting loss streak to 0")
+                elif result.lost:
+                    self.dc_loss_streak += 1
+                    if self.dc_loss_streak > self.max_loss_progression:
+                        self.dc_loss_streak = self.max_loss_progression
+                    if self.debug:
+                        print(f"Don't Come bet lost, increasing loss streak to {self.dc_loss_streak}")
+            
+        # Warning for multiple DC bets (shouldn't happen)
+        if len(dc_bets) > 1:
             print("  *** WARNING *** UNEXPECTED CONDITION: MULTIPLE DC BETS *** WARNING ***")
 
         # if self.verbose: print("AR:" + build_bet_result_string(player) , " DCLS: ", self.dc_loss_streak , "\n")
@@ -228,7 +241,7 @@ class TMD(Strategy):
                 print("  - DC IS SET")
                 print("  - SETTING COME")            
             #BetCome(self.base_amount*progression, StrategyMode.ADD_IF_POINT_ON).update_bets(player)   
-            BetCome(self.base_amount).update_bets(player)     
+            BetCome(self.base_amount*progression).update_bets(player)     
             #AddIfTrue(Come(self.base_amount*progression),lambda p: len(p.get_bets_by_type((DontCome,))) == 1).update_bets(player)
 
         # Add Odds
