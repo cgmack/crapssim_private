@@ -13,10 +13,17 @@ The implementation will proceed in small, incremental, and testable steps.
 
 **1.1. Database Schema Definition & Connection (PostgreSQL)**
 *   **Action:** Define the SQL schema for the PostgreSQL database. This will include tables for:
-    *   `simulations` (Simulation_ID, Strategy_Name, Starting_Bankroll_For_Simulation, Total_Sessions_To_Run, Simulation_End_Bankroll, Did_Ruin_Occur_In_Simulation, Session_Number_Of_Ruin, etc.)
+    *   `strategy_configurations` (Strategy_Config_ID, Strategy_Name, Base_Bet, Starting_Bankroll_Config, Other_Strategy_Parameters_JSON) - New table to store unique strategy configurations.
+    *   `simulations` (Simulation_ID, Strategy_Config_ID (FK), Total_Sessions_To_Run, Simulation_End_Bankroll, Did_Ruin_Occur_In_Simulation, Session_Number_Of_Ruin, etc.) - Updated to link to `strategy_configurations`.
     *   `sessions` (Session_ID, Simulation_ID (FK), Session_Number, Starting_Bankroll_Session, Ending_Bankroll_Session, Net_Profit_Loss_Session, Session_Outcome, Total_Rolls_In_Session, Total_Dollars_Risked_In_Session, Max_Bankroll_During_Session, Min_Bankroll_During_Session, Did_Target_130_Reach, Did_Target_200_Reach, Total_Hedging_Dollars_Placed_In_Session, Total_Bets_Placed_In_Session, etc.)
     *   `rolls` (Roll_ID, Session_ID (FK), Simulation_ID (FK), Roll_Number_In_Session, Dice_Roll_Value, Current_Bankroll_After_Roll, Cumulative_Net_Profit_Loss_Session_To_Roll, Cumulative_Dollars_Risked_Session_To_Roll, Point_Status_After_Roll, etc.)
     *   `bets` (Bet_Event_ID, Bet_ID, Session_ID (FK), Simulation_ID (FK), Player_ID, Event_Type, Bet_Type, Bet_Amount, Is_Hedging_Bet, Roll_Number_When_Event_Occurred, Profit_Loss_From_Bet_Resolution, etc.)
+*   **Action:** Update `crapssim/db_utils.py`: Define the new `strategy_configurations` table and modify the `simulations` table.
+*   **Action:** Update `crapssim/logger.py`: Adjust `SimulationLogger` to handle `Strategy_Config_ID`.
+*   **Action:** Update `crapssim/simulation.py`: Implement logic to manage `Strategy_Config_ID` creation/retrieval.
+*   **Action:** Update `crapssim/analytics.py`: Adapt data retrieval and processing to use `strategy_configurations`.
+*   **Action:** Update GUI Backend (`gui/backend/app.py`): Modify API endpoints to fetch and serve strategy configuration data.
+*   **Action:** Update GUI Frontend (`gui/frontend/src/App.js` and other React components): Adapt UI to display strategy configuration details.
 *   **Action:** Create a new module, e.g., `crapssim/db_utils.py`, to handle PostgreSQL connection and table creation/management. This module will contain functions to:
     *   Connect to the PostgreSQL database.
     *   Create the necessary tables if they don't exist.
@@ -101,6 +108,33 @@ The implementation will proceed in small, incremental, and testable steps.
 ### Phase 3: Visualization
   **PLACEHOLDER:** TBD
 
+### Phase 4: GUI Development
+
+**4.1 Frontend Development Setup:**
+*   **Action:** Leverage the existing React application structure (`gui/frontend/`).
+*   **Action:** Define a modular component architecture for the GUI (e.g., `Dashboard.js`, `StrategyReport.js`, `ComparisonView.js`, `DiceRollAnalysis.js`, and reusable UI components for charts and tables).
+*   **Action:** Select a suitable charting library (e.g., Chart.js, Recharts, Nivo) for data visualization.
+
+**4.2 Backend API Development (for GUI Data Retrieval):**
+*   **Action:** Develop RESTful API endpoints within `gui/backend/app.py` (Flask) to serve the analytical data from the PostgreSQL database.
+*   **Key Endpoints Needed:**
+    *   `GET /api/strategies`: Returns a list of all available strategy names.
+    *   `GET /api/strategy_performance_summary`: Returns data for the `Strategy_Performance_Summary` table, with optional filters for strategy name.
+    *   `GET /api/strategy_risk_profile`: Returns data for the `Strategy_Risk_Profile` table, with optional filters.
+    *   `GET /api/hedging_impact_and_usage`: Returns data for the `Hedging_Impact_And_Usage` table, with optional filters.
+    *   `GET /api/comprehensive_strategy_comparison`: Returns data for the `Comprehensive_Strategy_Comparison` table, with optional filters.
+    *   `GET /api/bankroll_trajectory_data/<simulation_id>/<session_id>`: Returns detailed roll-level bankroll data for a specific session.
+    *   `GET /api/bet_event_data/<simulation_id>/<session_id>`: Returns detailed bet-level event data for a specific session.
+*   **Unit Test:** Write tests for each API endpoint to ensure correct data retrieval, filtering, and JSON formatting.
+
+**4.3 Frontend-Backend Integration:**
+*   **Action:** Implement data fetching logic in React components to consume the backend API endpoints.
+*   **Action:** Integrate the fetched data with the chosen charting library and UI components for rendering.
+
+**4.4 User Input for Simulations (Future Phase - Placeholder):**
+*   **Action:** Design and implement UI forms for users to input simulation parameters and trigger new simulation runs via a backend API call.
+*   **Action:** Develop backend logic to receive these parameters and initiate the `run_full_simulation` process, potentially in a background task.
+
 ## Active Decisions and Considerations
 *   **PostgreSQL Connection Details:** Ensure secure handling of database credentials (e.g., environment variables, configuration file).
 *   **Error Handling:** Implement robust error handling for database operations and data collection.
@@ -111,6 +145,12 @@ The implementation will proceed in small, incremental, and testable steps.
 *   **Separation of Concerns:** Maintain clear boundaries between game logic, data logging, and data analysis.
 *   **Incremental Development:** Build and test each component in isolation before integrating.
 *   **Comprehensive Testing:** Unit tests for individual functions/classes and integration tests for end-to-end flows.
+*   **GUI Design Principles:**
+    *   **User-Centric Design:** Prioritize clarity, ease of use, and intuitive navigation for all user interactions.
+    *   **Data Visualization Best Practices:** Employ appropriate chart types for different data sets, ensure clear labeling, and avoid visual clutter.
+    *   **Modularity and Reusability:** Design UI components to be self-contained and reusable across different parts of the application.
+    *   **Performance Optimization:** Implement strategies for efficient data loading and rendering, especially for large datasets, to ensure a smooth user experience.
+    *   **Scalability:** Design the GUI to easily accommodate new strategies, metrics, and visualization types in the future.
 
 ## Learnings and Project Insights
 This implementation will significantly enhance CrapsSim's analytical capabilities, transforming it from a simulation engine into a powerful tool for strategy validation and optimization. The structured logging to PostgreSQL will provide a solid foundation for future data-driven insights.

@@ -8,15 +8,21 @@
 
 ## What's Left to Build
 - Implementation of the analytics data logging system as outlined in [`memory-bank/activeContext.md`](memory-bank/activeContext.md). This includes:
-    - Database schema definition and connection utilities for PostgreSQL. (Completed)
+    - **Database schema definition and updates for PostgreSQL, specifically adding the `strategy_configurations` table and linking it to `simulations`.** (Next Step)
+    - **Update `crapssim/db_utils.py`**: Define the new `strategy_configurations` table and modify the `simulations` table.
+    - **Update `crapssim/logger.py`**: Adjust `SimulationLogger` to handle `Strategy_Config_ID`.
+    - **Update `crapssim/simulation.py`**: Implement logic to manage `Strategy_Config_ID` creation/retrieval.
+    - **Update `crapssim/analytics.py`**: Adapt data retrieval and processing to use `strategy_configurations`.
+    - **Update GUI Backend (`gui/backend/app.py`)**: Modify API endpoints to fetch and serve strategy configuration data.
+    - **Update GUI Frontend (`gui/frontend/src/App.js` and other React components)**: Adapt UI to display strategy configuration details.
     - Creation and integration of the `SimulationLogger` class. (Completed)
     - Modifications to `crapssim/table.py` and `crapssim/player.py` for data capture. (Completed)
     - Development of `crapssim/simulation.py` for full simulation orchestration. (Completed)
     - Implementation of data analysis and metrics calculation. (Completed)
     - Saving completed analysis to the database. (Completed)
     - Create Basic GUI framework and navigation
-    - Create standardized “report card” for each strategy. 
-    - Create a central dashboard compares simulations. 
+    - Create standardized “report card” for each strategy.
+    - Create a central dashboard compares simulations.
     - Create Side by side deep dive comparisons report.
     - Create Dice roll analysis report.
 

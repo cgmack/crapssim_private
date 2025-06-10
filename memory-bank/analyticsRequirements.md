@@ -5,8 +5,8 @@
 
 # Here are a few structural aspects of a simulation to keep in mind
  * A simulation can have multiple players, but we usually run it with one player.
- * Each player will have one strategy that remains the same for the entire simulation. 
- * Each player has a starting_bankroll and a current bankroll. The starting_bankroll is the same for each session throughout the simulation. The current bankroll cannot go negative. 
+ * Each player will have one **Strategy Configuration** that remains the same for the entire simulation. A **Strategy Configuration** is defined as a specific strategy (e.g., IronCross) combined with its unique set of input parameters (e.g., base bet, starting bankroll, specific bet amounts, hedging rules).
+ * Each player has a starting_bankroll and a current bankroll. The starting_bankroll is the same for each session throughout the simulation. The current bankroll cannot go negative.
  * A simulation will have multiple sessions. A session consists of a number of dice rolls, set by max_rolls. However, if max_rolls is set to true, the session will continue past max_rolls until player has no more bets on the table.
  * max_rolls is typically set to a number that reflects 1-2 hours of game play in a casino. Assume a typical craps table sees approximately 60-120 rolls per hour.
  * A simulation typically consists of 10000 sessions. This number can be higher or lower to achieve statistical significance.
@@ -271,18 +271,52 @@ To compute the above metrics, the simulation logging system should capture the f
 ## 3.0 The Web GUI 
 
 ### 3.1 High level organization of the web interface.
-* Every strategy has a standardized “report card” that displays the results of the simulations. (latest simulation as the default. In the future maybe allow user to choose or provide some aggregate)
-    * Name
-    * Plain english summary of how it is played
-    * Interesting fact and/or background tidbit 
-    * Visual flowchart of play
-    * Top level stats
-      * Estimated EV
-      * Number of simulations and total rolls 
-    * Detailed analysis
-      * Probability of outcome curve
-* A central dashboard compares simulations. This is a collection of visualizations and tables. All simulations can be displayed here. In practice, the top n of each visualizations are displayed. For example, the top n most profitable.
-* Side by side deep dive comparisons report (dynamically generated based on two selected simulations)
-* Dice roll analysis / hedge analysis report  (dynamically generated for on on simulation)
+
+#### 3.1.1 Strategy Report Card Details:
+*   **Layout:** A dedicated single-page view for a selected strategy.
+*   **Components:**
+    *   **Header Section:** Prominently display `Strategy_Name`, a concise "Plain English Summary" of how the strategy is played, and an "Interesting Fact and/or Background Tidbit."
+    *   **Visual Flowchart:** A section to display a visual representation of the strategy's logic. This could initially be a static image, with potential for interactive diagrams in the future.
+    *   **Top-Level Stats Card:** A prominent card displaying key summary metrics for the selected strategy, including `Avg_Net_Profit_Loss_Per_Session`, `Empirical_EV_Per_Dollar_Risked`, `Win_Rate_Percentage`, `Risk_Of_Ruin_Percentage`, `Total_Sessions_Simulated`, and `Total_Rolls_Simulated`.
+    *   **Detailed Analysis Section (Tabs/Sections):**
+        *   **Performance Overview:** Display the `Strategy_Performance_Summary` table for the selected strategy.
+        *   **Risk Profile:** Display the `Strategy_Risk_Profile` table for the selected strategy.
+        *   **Bankroll Trajectory:** A line chart (`1.2.12 Bankroll Fluctuation Over Time`) showing `Current_Bankroll` over `Roll_Number` for a single, representative session of the selected strategy.
+        *   **Cumulative EV:** A line chart (`1.2.13 Cumulative EV Evolution`) showing `Cumulative_Empirical_EV` over `Session_Number` for the selected strategy.
+        *   **Hedging Impact:** Display the `Hedging_Impact_And_Usage` table for the selected strategy, and potentially a grouped bar chart (`1.3.6 Hedging Impact Comparison`) if different hedging configurations are simulated for this strategy.
+        *   **Probability of Outcome Curve:** A distribution plot (e.g., histogram or density plot) of `Net_Profit_Loss_Session` across all sessions for the selected strategy.
+*   **Interaction:** A dropdown or search bar at the top to allow users to select a specific strategy to view its report card.
+
+#### 3.1.2 Central Dashboard Details:
+*   **Layout:** A multi-panel dashboard designed for comparing multiple strategies.
+*   **Components:**
+    *   **Comprehensive Comparison Table:** Display the `Comprehensive_Strategy_Comparison` table (`1.4.5`) with sortable columns.
+    *   **Comparison Visualizations:**
+        *   `Multi-Strategy Performance Radar Chart` (`1.4.6`).
+        *   `Parallel Coordinates Plot` (`1.4.7`).
+        *   `Risk vs. Return Scatter Plot` (`1.2.14`).
+        *   `Target Reach & Ruin Frequency` grouped bar chart (`1.2.15`).
+        *   `Top Strategies by Specific Metric` bar charts (`1.4.8`), allowing users to select the metric to rank by.
+*   **Interaction:** Filters for `Total_Sessions_Simulated`, `Starting_Bankroll_For_Simulation`, and other simulation parameters to narrow down the displayed data. Checkboxes or a multi-select dropdown to choose which strategies to include in the comparisons.
+
+#### 3.1.3 Side-by-Side Deep Dive Comparisons Report Details:
+*   **Layout:** A two-column layout, with each column displaying a full "Strategy Report Card" (as defined in 3.1.1) for a distinct selected strategy.
+*   **Components:** All components of the "Strategy Report Card" for two selected strategies, enabling direct visual and numerical comparison.
+*   **Interaction:** Two separate dropdowns/search inputs to select the two strategies for comparison.
+
+#### 3.1.4 Dice Roll Analysis / Hedge Analysis Report Details:
+*   **Layout:** A dedicated page for granular analysis of a single simulation run or even a single session.
+*   **Components:**
+    *   **Detailed Bankroll Trajectory:** An interactive line chart showing `Current_Bankroll_After_Roll` over `Roll_Number_In_Session` for a selected session, with tooltips showing `Dice_Roll_Value` and `Point_Status_After_Roll`.
+    *   **Bet Event Timeline:** A timeline visualization of `Bet_Event_ID` showing "Place" and "Resolve" events, `Bet_Type`, `Bet_Amount`, `Profit_Loss_From_Bet_Resolution`, and `Is_Hedging_Bet` for a selected session.
+    *   **Hedging Action Profitability:** If granular data allows, a scatter plot (`1.3.8`) showing `Profit_Loss_From_Bet_Resolution` for hedging bets against `Bet_Amount` or `Roll_Number_When_Event_Occurred`.
+*   **Interaction:** Dropdowns to select a specific `Simulation_ID` and then a `Session_ID` for detailed analysis.
+
+#### 3.1.5 General GUI Considerations:
+*   **Navigation:** Implement a clear and intuitive navigation system (e.g., a persistent sidebar or top navigation bar) to switch between "Strategy Report Card," "Central Dashboard," "Deep Dive Comparisons," and "Dice Roll/Hedge Analysis."
+*   **Responsiveness:** The GUI should be designed to be responsive and usable across various screen sizes (desktop, tablet, mobile).
+*   **Performance:** Consider strategies for handling large datasets for visualizations (e.g., lazy loading, data aggregation on the backend, sampling for initial views).
+*   **User Input for Simulations (Future):** While not part of the initial GUI display, a future phase will require UI elements for users to configure and trigger new simulations (e.g., input fields for `Starting_Bankroll`, `Total_Sessions_To_Run`, selecting strategies, and defining strategy-specific parameters).
+*   **Data Refresh:** Define how data will be refreshed (e.g., on-demand refresh button, automatic refresh after a new simulation completes).
 
 This detailed specification of metrics and data points will enable the development of a robust simulation logging system capable of supporting all the desired analytical questions, tabular summaries, and visualizations.

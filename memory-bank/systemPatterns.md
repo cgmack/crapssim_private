@@ -7,11 +7,11 @@ CrapsSim follows a modular architecture, primarily composed of the following key
 - **Dice Module**: Handles dice rolling mechanics, including generating random numbers and summing dice.
 - **Bet Module**: Defines various types of craps bets, their rules, payouts, and resolution logic. Each bet type is an independent entity.
 - **Player/Strategy Module**: Encapsulates player behavior and betting strategies. Strategies interact with the table to place and remove bets based on game state.
-- **Simulation Engine**: The core orchestrator that runs multiple game iterations, collects data, and manages the overall simulation process.
+- **Simulation Engine**: The core orchestrator that runs multiple game iterations, collects data, and manages the overall simulation process. It will now also manage the association of simulations with specific strategy configurations.
 
 ## Key Technical Decisions
 - **Object-Oriented Design**: Core entities like `Dice`, `Bet`, `Table`, and `Player` are implemented as classes to promote encapsulation, reusability, and maintainability.
-- **Strategy Pattern**: Betting strategies are designed as interchangeable components, allowing users to easily plug in new strategies without modifying the core simulation logic.
+- **Strategy Pattern**: Betting strategies are designed as interchangeable components, allowing users to easily plug in new strategies without modifying the core simulation logic. This now extends to defining and associating specific strategy *configurations* (strategy + parameters) with simulation runs.
 - **Event-Driven Simulation (Implicit)**: While not a formal event bus, the interaction between components (e.g., dice roll triggering bet resolution) can be thought of as an implicit event-driven system.
 - **Data Collection**: Simulation data is collected incrementally during runtime and aggregated for post-simulation analysis.
 
@@ -24,7 +24,7 @@ CrapsSim follows a modular architecture, primarily composed of the following key
 - `Table` interacts with `Dice` to get roll outcomes.
 - `Table` manages `Bet` objects, resolving them based on dice rolls and point state.
 - `Player`/`Strategy` interacts with `Table` to place and remove `Bet`s.
-- The `Simulation Engine` orchestrates `Table` and `Player` interactions over multiple iterations.
+- The `Simulation Engine` orchestrates `Table` and `Player` interactions over multiple iterations, and is responsible for linking simulations to specific `Strategy Configurations`.
 
 ## Critical Implementation Paths
 - **Dice Roll to Bet Resolution**: The sequence from a dice roll, updating the table state, and then resolving all active bets is a critical path that must be robust and accurate.
@@ -33,3 +33,10 @@ CrapsSim follows a modular architecture, primarily composed of the following key
 - **Unit Tests**: Thorough test coverage of each and every component and bet type. 
 - **Integration Tests**: Thorough test coverage of Component Relationships
 - **Strategy Tests**: Test data and test drivers (fixed runs) to test all scenarios for standard and custom strategies.
+
+## GUI Design Principles:
+*   **User-Centric Design:** Prioritize clarity, ease of use, and intuitive navigation for all user interactions.
+*   **Data Visualization Best Practices:** Employ appropriate chart types for different data sets, ensure clear labeling, and avoid visual clutter.
+*   **Modularity and Reusability:** Design UI components to be self-contained and reusable across different parts of the application.
+*   **Performance Optimization:** Implement strategies for efficient data loading and rendering, especially for large datasets, to ensure a smooth user experience.
+*   **Scalability:** Design the GUI to easily accommodate new strategies, metrics, and visualization types in the future.
