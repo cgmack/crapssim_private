@@ -9,3 +9,9 @@
 * We will ocasionally pull new updates from this project. 
 * We expect to diverge significantly from this baseline over time. To avoid conflicts, we should extend code instead of rewriting code when possible.
 * We don't plan to contribute our changes back to the upstream project at this time.
+
+## GUI Technology Stack
+*   **Frontend Framework:** React
+*   **Backend API Framework:** Python Flask/FastAPI
+*   **API Design:** Multiple specialized endpoints for each report/visualization (e.g., `/api/strategy-performance`, `/api/risk-profile`)
+*   **Data Visualization Library:** Plotly.js for its strong interactive and scientific charting capabilities

@@ -1,13 +1,12 @@
 # Active Context
 
 ## Current Work Focus
-The current focus is on implementing a comprehensive data logging system for CrapsSim simulations to support detailed analytical metrics, visualizations, and answer specific analytical questions. This involves capturing raw simulation data, persisting it to a PostgreSQL database, and then performing post-simulation analysis.
+The current focus is on implementing a comprehensive analytics system for CrapsSim simulations to support detailed analytical metrics, visualizations, and answering specific analytical questions. This involves capturing raw simulation data, persisting it to a PostgreSQL database, and performing post-simulation analysis, and rendering the analysis in a GUI.
 
 ## Requirements
 - The requirements for the analytics data logging system is outlined in [`memory-bank/analyticsRequirements.md`](memory-bank/analyticsRequirements.md).
 
 ## Next Steps: Implementing Analytics Data Logging
-
 The implementation will proceed in small, incremental, and testable steps.
 
 ### Phase 1: Database Setup and Logger Foundation
@@ -98,6 +97,9 @@ The implementation will proceed in small, incremental, and testable steps.
 *   **Unit Test:** Write tests to verify that:
     *   Aggregated results are correctly inserted into the new summary tables in PostgreSQL.
     *   The data types and constraints are respected.
+
+### Phase 3: Visualization
+  **PLACEHOLDER:** TBD
 
 ## Active Decisions and Considerations
 *   **PostgreSQL Connection Details:** Ensure secure handling of database credentials (e.g., environment variables, configuration file).

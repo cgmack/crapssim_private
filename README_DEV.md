@@ -112,4 +112,24 @@ Follow these steps to set up and start developing:
     pip install -r requirements.txt
     ```
 
+## 5. Running the GUI
+
+To run the CrapsSim GUI, ensure your PostgreSQL database is running (as per section 3) and then follow these steps:
+
+1.  **Start the Backend API:**
+    Navigate to the `gui/backend` directory and run the Flask application. This will start the API server that serves data to the frontend.
+    ```bash
+    cd gui/backend
+    PYTHONPATH=/workspaces/crapssim_private python app.py
+    ```
+    Leave this terminal running.
+
+2.  **Start the Frontend Development Server:**
+    Open a **new terminal**, navigate to the `gui/frontend` directory, and start the React development server.
+    ```bash
+    cd gui/frontend
+    npm start
+    ```
+    This will open the GUI in your browser, typically at `http://localhost:3000`.
+
 You are now ready to start developing on the CrapsSim codebase!
