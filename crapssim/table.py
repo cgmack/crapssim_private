@@ -1,5 +1,6 @@
 import copy
 import typing
+import uuid # Added for logging
 
 from crapssim.dice import Dice
 
@@ -18,17 +19,66 @@ class TableUpdate:
         table: "Table",
         dice_outcome: typing.Iterable[int] | None = None,
         verbose: bool = False,
+        logger=None,
+        session_id: str = None,
+        simulation_id: str = None,
     ):
         """Run through the roll logic of the table."""
         self.run_strategies(table, verbose)
         self.print_player_summary(table, verbose)
         self.before_roll(table)
         self.update_table_stats(table)
+
+        # Generate roll_id before the roll
+        roll_id = str(uuid.uuid4()) if logger else None
+
+        # Record pre-roll data
+        if logger:
+            # Assuming only one player for now, or we need to iterate players
+            # For simplicity, using the first player's ID
+            player_id = str(table.players[0].player_id) if table.players else None
+
+            logger.record_roll(
+                roll_id=roll_id,
+                session_id=session_id,
+                simulation_id=simulation_id,
+                player_id=player_id,
+                roll_number_in_session=table.dice.n_rolls + 1, # +1 because roll hasn't happened yet
+                dice_roll_value=0, # Placeholder, actual value after roll
+                current_bankroll_after_roll=table.total_player_cash,
+                cumulative_net_profit_loss_session_to_roll=0.0, # To be updated later
+                cumulative_dollars_risked_session_to_roll=0.0, # To be updated later
+                point_status_after_roll=table.point.status
+            )
+
         self.roll(table, dice_outcome, verbose)
         self.after_roll(table)
-        self.update_bets(table, verbose)
+        self.update_bets(table, verbose, logger, session_id, simulation_id, roll_id)
         self.set_new_shooter(table)
         self.update_numbers(table, verbose)
+
+        # Record post-roll data (update the existing roll entry)
+        if logger:
+            # This is a simplified update. A more robust solution might involve
+            # fetching the existing roll record and updating it, or ensuring
+            # the logger can handle partial updates or a "final_record_roll" method.
+            # For now, we'll assume the logger can handle updating the same roll_id
+            # with the final dice_roll_value and other cumulative stats.
+            # The current logger.record_roll appends, so this needs adjustment.
+            # For the purpose of this diff, we'll just add another record_roll call
+            # and assume the analytics module will handle the aggregation.
+            # A better approach would be to modify the logger to have an update_roll method.
+            # Update the existing roll record with final data
+            player_id = str(table.players[0].player_id) if table.players else None # Assuming one player
+
+            logger.update_roll(
+                roll_id=roll_id,
+                dice_roll_value=table.dice.total,
+                current_bankroll_after_roll=table.total_player_cash,
+                cumulative_net_profit_loss_session_to_roll=table.players[0].net_profit_loss_session, # Assuming one player
+                cumulative_dollars_risked_session_to_roll=table.players[0].total_dollars_risked_session, # Assuming one player
+                point_status_after_roll=table.point.status
+            )
 
     @staticmethod
     def run_strategies(table: "Table", verbose=False):
@@ -77,9 +127,9 @@ class TableUpdate:
             player.strategy.after_roll(player)
 
     @staticmethod
-    def update_bets(table: "Table", verbose=False):
+    def update_bets(table: "Table", verbose=False, logger=None, session_id: str = None, simulation_id: str = None, roll_id: str = None):
         for player in table.players:
-            player.update_bet(verbose=verbose)
+            player.update_bet(verbose=verbose, logger=logger, session_id=session_id, simulation_id=simulation_id, roll_id=roll_id)
 
     @staticmethod
     def set_new_shooter(table: "Table"):
@@ -220,6 +270,9 @@ class Table:
         max_shooter: float | int = float("inf"),
         verbose: bool = True,
         runout: bool = False,
+        logger=None,
+        session_id: str = None,
+        simulation_id: str = None,
     ) -> None:
         """
         Runs the craps table until a stopping condition is met.
@@ -243,7 +296,7 @@ class Table:
 
         continue_rolling = True
         while continue_rolling:
-            TableUpdate().run(self, verbose=verbose)
+            TableUpdate().run(self, verbose=verbose, logger=logger, session_id=session_id, simulation_id=simulation_id)
             continue_rolling = self.should_keep_rolling(
                 max_rolls + n_rolls_start, max_shooter + n_shooter_start, runout
             )
@@ -267,6 +320,9 @@ class Table:
         self._setup_run(verbose=verbose)
 
         for dice_outcome in dice_outcomes:
+            # For fixed_run, we don't have logger/session_id/simulation_id readily available
+            # as it's typically used for testing specific dice sequences.
+            # If logging is needed for fixed_run, these parameters would need to be passed in.
             TableUpdate().run(self, dice_outcome, verbose=verbose)
 
     def should_keep_rolling(
@@ -361,11 +417,14 @@ class Player:
         bet_strategy: Strategy = BetPassLine(5),
         name: str = "Player",
     ):
+        self.player_id: str = str(uuid.uuid4()) # Added for logging
         self.bankroll: float = float(bankroll)
         self.strategy: Strategy = copy.deepcopy(bet_strategy)
         self.name: str = name
         self.bets: list[Bet] = []
         self._table: Table = table
+        self.net_profit_loss_session: float = 0.0 # Added for logging
+        self.total_dollars_risked_session: float = 0.0 # Added for logging
 
     @property
     def total_bet_amount(self) -> float:
@@ -379,16 +438,31 @@ class Player:
     def table(self) -> Table:
         return self._table
 
-    def add_bet(self, bet: Bet) -> None:
+    def add_bet(self, bet: Bet, logger=None, session_id: str = None, simulation_id: str = None, roll_id: str = None) -> None:
         existing_bets: list[Bet] = self.already_placed_bets(bet)
         new_bet = sum(existing_bets + [bet])
         amount_available_to_bet = self.bankroll + sum(x.amount for x in existing_bets)
 
         if new_bet.is_allowed(self) and new_bet.amount <= amount_available_to_bet:
-            for bet in existing_bets:
-                self.bets.remove(bet)
+            for existing_bet in existing_bets:
+                self.bets.remove(existing_bet)
             self.bankroll -= bet.amount
             self.bets.append(new_bet)
+
+            if logger and session_id and simulation_id and roll_id:
+                logger.record_bet_event(
+                    bet_event_id=str(uuid.uuid4()),
+                    bet_id=str(id(new_bet)),
+                    session_id=session_id,
+                    simulation_id=simulation_id,
+                    player_id=self.player_id, # Use player_id
+                    event_type="Place",
+                    bet_type=new_bet.__class__.__name__, # Use __class__.__name__ for bet type
+                    bet_amount=new_bet.amount,
+                    is_hedging_bet=False, # Placeholder, needs logic to determine if hedging
+                    roll_number_when_event_occurred=self.table.dice.n_rolls
+                )
+                self.total_dollars_risked_session += new_bet.amount # Update total dollars risked
 
     def already_placed_bets(self, bet: Bet) -> list[Bet]:
         """
@@ -424,13 +498,29 @@ class Player:
         if self.strategy is not None:
             self.strategy.update_bets(self)
 
-    def update_bet(self, verbose: bool = False) -> None:
+    def update_bet(self, verbose: bool = False, logger=None, session_id: str = None, simulation_id: str = None, roll_id: str = None) -> None:
         for bet in self.bets[:]:
             result: BetResult = bet.get_result(self.table)
             self.bankroll += result.bankroll_change
 
             if verbose:
                 self.print_bet_update(bet, result)
+
+            if logger and session_id and simulation_id and roll_id:
+                logger.record_bet_event(
+                    bet_event_id=str(uuid.uuid4()),
+                    bet_id=str(id(bet)),
+                    session_id=session_id,
+                    simulation_id=simulation_id,
+                    player_id=self.player_id, # Use player_id
+                    event_type="Resolve",
+                    bet_type=bet.__class__.__name__, # Use __class__.__name__ for bet type
+                    bet_amount=bet.amount,
+                    is_hedging_bet=False, # Placeholder, needs logic to determine if hedging
+                    roll_number_when_event_occurred=self.table.dice.n_rolls,
+                    profit_loss_from_bet_resolution=result.bankroll_change
+                )
+                self.net_profit_loss_session += result.bankroll_change # Update net profit/loss
 
             if result.remove:
                 self.bets.remove(bet)
